@@ -1,11 +1,16 @@
 /* Created by FCaminade
  * Date : 16/02/2018
  * Allow the control of dynamixels using Protocol 2.0 like X series 
+ * 
+ * NB : 
+ * Current settings : - Serial4 for protocol 1.0 
+                      - serial5 for protocol 2.0 
+                      - XM_TX_DELAY_TIME = 400us (settings for 1Mbps) for default use (57600bps) this parameter have to be increase ~4000us
  */
 
 #include <time.h>
 
-#include <SavageDynamixelSerial_Upgraded.h> ///ATENTION SERIAL 3 || Tx, Rx pins have to be modified in DynamixelSerial_Modified.cpp ||
+#include <SavageDynamixelSerial_Upgraded.h> 
 
 int theta;
 float p=1.57;
@@ -37,7 +42,7 @@ void loop() {
   theta = labs(255*cos(p));
   Serial.println(theta);
     
-  DynamixelX.move(1,theta ); //DYNAMIXEL AX Right
+  DynamixelX.move(1,theta ); 
   
   delay (10);
 
