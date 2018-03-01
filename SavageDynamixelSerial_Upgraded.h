@@ -139,12 +139,12 @@
 	// Specials ///////////////////////////////////////////////////////////////
 #define OFF                         0
 #define ON                          1
-#define LEFT						0
+#define LEFT						            0
 #define RIGTH                       1
 #define AX_BYTE_READ                1
 #define AX_BYTE_READ_POS            2
-#define AX_RESET_LENGTH				2
-#define AX_ACTION_LENGTH			2
+#define AX_RESET_LENGTH				      2
+#define AX_ACTION_LENGTH			      2
 #define AX_ID_LENGTH                4
 #define AX_LR_LENGTH                4
 #define AX_SRL_LENGTH               4
@@ -169,13 +169,13 @@
 #define AX_PUNCH_LENGTH             5
 #define AX_SPEED_LENGTH             5
 #define AX_GOAL_SP_LENGTH           7
-#define AX_ACTION_CHECKSUM			250
+#define AX_ACTION_CHECKSUM			    250
 #define BROADCAST_ID                254
 #define AX_START                    255
 #define AX_CCW_AL_L                 255 
 #define AX_CCW_AL_H                 3
-#define TIME_OUT                    10         // Este parametro depende de la velocidad de transmision
-#define TX_DELAY_TIME				400        // Este parametro depende de la velocidad de transmision - pero pueden ser cambiados para mayor velocidad.
+#define TIME_OUT                    50000         // Este parametro depende de la velocidad de transmision
+#define TX_DELAY_TIME			          2   //1us     // Este parametro depende de la velocidad de transmision - pero pueden ser cambiados para mayor velocidad.
 #define Tx_MODE                     1
 #define Rx_MODE                     0
 #define LOCK                        1
@@ -185,22 +185,24 @@
 #define XM_BAUD_RATE                8	
 	
 	// RAM AREA  //////////////////////////////////////////////////////////////
+#define XM_RETURN_DELAY_TIME        9  
 #define XM_TORQUE_ENABLE            64
 #define XM_GOAL_POSITION          	116	
 
 	// Status Return Levels ///////////////////////////////////////////////////////////////
 	
     // Instruction Set ///////////////////////////////////////////////////////////////	
-#define XM_WRITE 					3  
+#define XM_WRITE 					          3  
   
 	// Specials ///////////////////////////////////////////////////////////////    
 #define XM_START_FF                 255
-#define XM_START_FD					253	
-#define XM_0						0 
-#define XM_BD_LENGTH				6
-#define XM_TORQUE_LENGTH			6
+#define XM_START_FD					        253	
+#define XM_0						            0 
+#define XM_RDT_LENGTH               4
+#define XM_BD_LENGTH				        6
+#define XM_TORQUE_LENGTH			      6
 #define XM_GOAL_LENGTH              9
-#define XM_TX_DELAY_TIME			400 //Depends on baud rate. Ex: 57600bps->4000us ; 1Mbps->400us	
+#define XM_TX_DELAY_TIME			      2 	
 	
 
 
@@ -211,7 +213,7 @@ private:
 	
 	unsigned char Checksum; 
 	unsigned char Direction_Pin;
-	unsigned char Time_Counter;
+	unsigned int Time_Counter;
 	unsigned char Incoming_Byte;               
 	unsigned char Position_High_Byte;
 	unsigned char Position_Low_Byte;
@@ -288,7 +290,7 @@ class DynamixelXClass {
 private:
 	
 	unsigned char Direction_Pin;
-	unsigned char Time_Counter;
+	unsigned int Time_Counter;
 	unsigned char Incoming_Byte;               
 	unsigned char Position_High_Byte;
 	unsigned char Position_Low_Byte;
@@ -314,6 +316,7 @@ public:
 
 	void begin(long baud, unsigned char directionPin);
 	int move(unsigned char ID, int Position);
+  int setRDT(unsigned char ID, unsigned char RDT); // SET return delay time
 	int setBD(unsigned char ID, int baud);//0:9600, 1:57600(default), 2:115200, 3:1M, 4:2M, 5:3M, 6:4M, 7:4.5M
 	int setTorque(unsigned char ID, bool torque);
 	

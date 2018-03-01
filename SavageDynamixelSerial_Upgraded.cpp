@@ -25,6 +25,7 @@
 #define peekData()      (Serial4.peek())         // Peek Serial Data
 #define beginCom(args)  (Serial4.begin(args))    // Begin Serial Comunication
 #define endCom()        (Serial4.end())          // End Serial Comunication
+#define axflush()       (Serial4.flush())         // Wait the end of the transfert
 //Protocol 2.0
 #define sendDataXm(args)  (Serial5.write(args))    // Write Over Serial
 #define availableDataXm() (Serial5.available())    // Check Serial Data Available
@@ -32,7 +33,7 @@
 #define peekDataXm()      (Serial5.peek())         // Peek Serial Data
 #define beginComXm(args)  (Serial5.begin(args))    // Begin Serial Comunication
 #define endComXm()        (Serial5.end())          // End Serial Comunication
-
+#define xmflush()         (Serial5.flush())         // Wait the end of the transfert
 // Macro for Timing
 
 #define delayus(args) (delayMicroseconds(args))  // Delay Microseconds
@@ -43,6 +44,7 @@
 #define switchCom(DirPin,Mode) (digitalWrite(DirPin,Mode))  // Switch to TX/RX Mode
 
 
+
 // Private Methods //////////////////////////////////////////////////////////////
 
 int DynamixelClass::read_error(void)
@@ -50,7 +52,7 @@ int DynamixelClass::read_error(void)
 	Time_Counter = 0;
 	while((availableData() < 5) & (Time_Counter < TIME_OUT)){  // Wait for Data
 		Time_Counter++;
-		delayus(1000);
+		delayus(1);
 	}
 	
 	while (availableData() > 0){
@@ -61,6 +63,33 @@ int DynamixelClass::read_error(void)
 			readData();                                    // Length
 			Error_Byte = readData();                       // Error
 				return (Error_Byte);
+		}
+	}
+	return (-1);											 // No Ax Response
+}
+
+int DynamixelXClass::read_error(void)
+{
+	Time_Counter = 0;
+	while((availableDataXm() < 9) & (Time_Counter < TIME_OUT)){  // Wait for Data
+		Time_Counter++;
+		delayus(1);
+	}
+	
+	while (availableDataXm() > 0){
+		Incoming_Byte = readDataXm(); //FF
+		if ( (Incoming_Byte == 255) & (peekDataXm() == 255) ){
+      readDataXm();                                    // Start Bytes FF
+      readDataXm();                                    // Start Bytes FD
+      readDataXm();                                    // reserved
+			readDataXm();                                    // Ax-12 ID
+      readDataXm();                                    // Length L
+			readDataXm();                                    // Length H
+      readDataXm();                                    // Instruction
+			Error_Byte = readDataXm();                       // Error
+				return (Error_Byte);
+        
+        
 		}
 	}
 	return (-1);											 // No Ax Response
@@ -183,6 +212,7 @@ int DynamixelClass::reset(unsigned char ID)
 	sendData(AX_RESET_LENGTH);
 	sendData(AX_RESET);    
 	sendData(Checksum);
+  axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 
@@ -200,6 +230,7 @@ int DynamixelClass::ping(unsigned char ID)
 	sendData(AX_READ_DATA);
 	sendData(AX_PING);    
 	sendData(Checksum);
+  axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
     
@@ -219,6 +250,7 @@ int DynamixelClass::setID(unsigned char ID, unsigned char newID)
     sendData(AX_ID);
     sendData(newID);
     sendData(Checksum);
+    axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
     
@@ -239,6 +271,7 @@ int DynamixelClass::setBD(unsigned char ID, long baud)
     sendData(AX_BAUD_RATE);
     sendData(Baud_Rate);
     sendData(Checksum);
+    axflush();
     delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
     
@@ -262,6 +295,7 @@ int DynamixelClass::move(unsigned char ID, int Position)
     sendData(Position_L);
     sendData(Position_H);
     sendData(Checksum);
+    axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 
@@ -289,6 +323,7 @@ int DynamixelClass::moveSpeed(unsigned char ID, int Position, int Speed)
     sendData(Speed_L);
     sendData(Speed_H);
     sendData(Checksum);
+    axflush();
     delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
     
@@ -311,6 +346,7 @@ int DynamixelClass::setEndless(unsigned char ID, bool Status)
       sendData(AX_CCW_AL_LT);
       sendData(AX_CCW_AL_LT);
       sendData(Checksum);
+      axflush();
       delayus(TX_DELAY_TIME);
 	  switchCom(Direction_Pin,Rx_MODE);
 
@@ -331,6 +367,7 @@ int DynamixelClass::setEndless(unsigned char ID, bool Status)
 	 sendData(AX_CCW_AL_L);
 	 sendData(AX_CCW_AL_H);
 	 sendData(Checksum);
+   axflush();
 	 delayus(TX_DELAY_TIME);
 	 switchCom(Direction_Pin,Rx_MODE);
 	 
@@ -357,6 +394,7 @@ int DynamixelClass::turn(unsigned char ID, bool SIDE, int Speed)
 			sendData(Speed_L);
 			sendData(Speed_H);
 			sendData(Checksum);
+      axflush();
 			delayus(TX_DELAY_TIME);
 			switchCom(Direction_Pin,Rx_MODE);
 			
@@ -379,6 +417,7 @@ int DynamixelClass::turn(unsigned char ID, bool SIDE, int Speed)
 			sendData(Speed_L);
 			sendData(Speed_H);
 			sendData(Checksum);
+      axflush();
 			delayus(TX_DELAY_TIME);
 			switchCom(Direction_Pin,Rx_MODE);
 			
@@ -403,6 +442,7 @@ int DynamixelClass::moveRW(unsigned char ID, int Position)
     sendData(Position_L);
     sendData(Position_H);
     sendData(Checksum);
+    axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 	
@@ -430,6 +470,7 @@ int DynamixelClass::moveSpeedRW(unsigned char ID, int Position, int Speed)
     sendData(Speed_L);
     sendData(Speed_H);
     sendData(Checksum);
+    axflush();
     delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
     
@@ -445,6 +486,7 @@ void DynamixelClass::action()
     sendData(AX_ACTION_LENGTH);
     sendData(AX_ACTION);
     sendData(AX_ACTION_CHECKSUM);
+    axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 }
@@ -462,6 +504,7 @@ int DynamixelClass::torqueStatus( unsigned char ID, bool Status)
     sendData(AX_TORQUE_ENABLE);
     sendData(Status);
     sendData(Checksum);
+    axflush();
     delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
     
@@ -481,6 +524,7 @@ int DynamixelClass::ledStatus(unsigned char ID, bool Status)
     sendData(AX_LED);
     sendData(Status);
     sendData(Checksum);
+    axflush();
     delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
     
@@ -500,6 +544,7 @@ int DynamixelClass::readTemperature(unsigned char ID)
     sendData(AX_PRESENT_TEMPERATURE);
     sendData(AX_BYTE_READ);
     sendData(Checksum);
+    axflush();
     delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 	
@@ -507,7 +552,7 @@ int DynamixelClass::readTemperature(unsigned char ID)
     Time_Counter = 0;
     while((availableData() < 6) & (Time_Counter < TIME_OUT)){
 		Time_Counter++;
-		delayus(1000);
+		delayus(1);
     }
 	
     while (availableData() > 0){
@@ -537,6 +582,7 @@ int DynamixelClass::readPosition(unsigned char ID)
     sendData(AX_PRESENT_POSITION_L);
     sendData(AX_BYTE_READ_POS);
     sendData(Checksum);
+    axflush();
     delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 	
@@ -544,7 +590,7 @@ int DynamixelClass::readPosition(unsigned char ID)
 	Time_Counter = 0;
     while((availableData() < 7) & (Time_Counter < TIME_OUT)){
 		Time_Counter++;
-		delayus(1000);
+		delayus(1);
     }
 	
     while (availableData() > 0){
@@ -578,6 +624,7 @@ int DynamixelClass::readVoltage(unsigned char ID)
     sendData(AX_PRESENT_VOLTAGE);
     sendData(AX_BYTE_READ);
     sendData(Checksum);
+    axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 	
@@ -585,7 +632,7 @@ int DynamixelClass::readVoltage(unsigned char ID)
 	Time_Counter = 0;
     while((availableData() < 6) & (Time_Counter < TIME_OUT)){
 		Time_Counter++;
-		delayus(1000);
+		delayus(1);
     }
 	
     while (availableData() > 0){
@@ -615,6 +662,7 @@ int DynamixelClass::setTempLimit(unsigned char ID, unsigned char Temperature)
 	sendData(AX_LIMIT_TEMPERATURE);
     sendData(Temperature);
 	sendData(Checksum);
+  axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 	
@@ -635,6 +683,7 @@ int DynamixelClass::setVoltageLimit(unsigned char ID, unsigned char DVoltage, un
     sendData(DVoltage);
     sendData(UVoltage);
 	sendData(Checksum);
+  axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 	
@@ -663,6 +712,7 @@ int DynamixelClass::setAngleLimit(unsigned char ID, int CWLimit, int CCWLimit)
     sendData(CCW_L);
 	sendData(CCW_H);
 	sendData(Checksum);
+  axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 	
@@ -686,6 +736,7 @@ int DynamixelClass::setMaxTorque(unsigned char ID, int MaxTorque)
     sendData(MaxTorque_L);
     sendData(MaxTorque_H);
     sendData(Checksum);
+    axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 	
@@ -705,6 +756,7 @@ int DynamixelClass::setSRL(unsigned char ID, unsigned char SRL)
     sendData(AX_RETURN_LEVEL);
     sendData(SRL);
     sendData(Checksum);
+    axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
     
@@ -724,6 +776,7 @@ int DynamixelClass::setRDT(unsigned char ID, unsigned char RDT)
     sendData(AX_RETURN_DELAY_TIME);
     sendData((RDT/2));
     sendData(Checksum);
+    axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
     
@@ -743,6 +796,7 @@ int DynamixelClass::setLEDAlarm(unsigned char ID, unsigned char LEDAlarm)
     sendData(AX_ALARM_LED);
     sendData(LEDAlarm);
     sendData(Checksum);
+    axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
     
@@ -762,6 +816,7 @@ int DynamixelClass::setShutdownAlarm(unsigned char ID, unsigned char SALARM)
     sendData(AX_ALARM_SHUTDOWN);
     sendData(SALARM);
     sendData(Checksum);
+    axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
     
@@ -783,6 +838,7 @@ int DynamixelClass::setCMargin(unsigned char ID, unsigned char CWCMargin, unsign
 	sendData(AX_CCW_COMPLIANCE_MARGIN);
     sendData(CCWCMargin);
 	sendData(Checksum);
+  axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 	
@@ -804,6 +860,7 @@ int DynamixelClass::setCSlope(unsigned char ID, unsigned char CWCSlope, unsigned
 	sendData(AX_CCW_COMPLIANCE_SLOPE);
     sendData(CCWCSlope);
 	sendData(Checksum);
+  axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 	
@@ -827,6 +884,7 @@ int DynamixelClass::setPunch(unsigned char ID, int Punch)
     sendData(Punch_L);
     sendData(Punch_H);
     sendData(Checksum);
+    axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 	
@@ -846,6 +904,7 @@ int DynamixelClass::moving(unsigned char ID)
     sendData(AX_MOVING);
     sendData(AX_BYTE_READ);
     sendData(Checksum);
+    axflush();
     delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 	
@@ -853,7 +912,7 @@ int DynamixelClass::moving(unsigned char ID)
     Time_Counter = 0;
     while((availableData() < 6) & (Time_Counter < TIME_OUT)){
 		Time_Counter++;
-		delayus(1000);
+		delayus(1);
     }
 	
     while (availableData() > 0){
@@ -883,6 +942,7 @@ int DynamixelClass::lockRegister(unsigned char ID)
     sendData(AX_LOCK);
     sendData(LOCK);
     sendData(Checksum);
+    axflush();
 	delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
     
@@ -902,6 +962,7 @@ int DynamixelClass::RWStatus(unsigned char ID)
     sendData(AX_REGISTERED_INSTRUCTION);
     sendData(AX_BYTE_READ);
     sendData(Checksum);
+    axflush();
     delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 	
@@ -909,7 +970,7 @@ int DynamixelClass::RWStatus(unsigned char ID)
     Time_Counter = 0;
     while((availableData() < 6) & (Time_Counter < TIME_OUT)){
 		Time_Counter++;
-		delayus(1000);
+		delayus(1);
     }
 	
     while (availableData() > 0){
@@ -939,6 +1000,7 @@ int DynamixelClass::readSpeed(unsigned char ID)
     sendData(AX_PRESENT_SPEED_L);
     sendData(AX_BYTE_READ_POS);
     sendData(Checksum);
+    axflush();
     delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 	
@@ -946,7 +1008,7 @@ int DynamixelClass::readSpeed(unsigned char ID)
 	Time_Counter = 0;
     while((availableData() < 7) & (Time_Counter < TIME_OUT)){
 		Time_Counter++;
-		delayus(1000);
+		delayus(1);
     }
 	
     while (availableData() > 0){
@@ -980,6 +1042,7 @@ int DynamixelClass::readLoad(unsigned char ID)
     sendData(AX_PRESENT_LOAD_L);
     sendData(AX_BYTE_READ_POS);
     sendData(Checksum);
+    axflush();
     delayus(TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 	
@@ -987,7 +1050,7 @@ int DynamixelClass::readLoad(unsigned char ID)
 	Time_Counter = 0;
     while((availableData() < 7) & (Time_Counter < TIME_OUT)){
 		Time_Counter++;
-		delayus(1000);
+		delayus(1);
     }
 	
     while (availableData() > 0){
@@ -1043,63 +1106,94 @@ int DynamixelXClass::move(unsigned char ID, int Position)
     sendDataXm(XM_0);
     sendDataXm(CRC_L);
     sendDataXm(CRC_H);
+    xmflush();
 	delayus(XM_TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
 
-    //return (read_error());                 // Return the read error
+    return (read_error());                 // Return the read error
 }
 
 
 int DynamixelXClass::setBD(unsigned char ID, int baud)
 {    
 	unsigned  char TxPacket[]={XM_START_FF,XM_START_FF,XM_START_FD,XM_0,ID,XM_BD_LENGTH,XM_0,XM_WRITE,XM_BAUD_RATE,XM_0,baud,XM_0,XM_0};
-    unsigned short CRC= update_crc (0,TxPacket,11); //init crc_accum | packet | 5+Packet Lenght()
+  unsigned short CRC= update_crc (0,TxPacket,11); //init crc_accum | packet | 5+Packet Lenght()
 	unsigned short CRC_L= (CRC & 0x00FF);
 	unsigned short CRC_H= (CRC >> 8) & 0x00FF;
 	switchCom(Direction_Pin,Tx_MODE);
-    sendDataXm(XM_START_FF);                 
-    sendDataXm(XM_START_FF);
-    sendDataXm(XM_START_FD);
-    sendDataXm(XM_0);
-    sendDataXm(ID);
+  sendDataXm(XM_START_FF);                 
+  sendDataXm(XM_START_FF);
+  sendDataXm(XM_START_FD);
+  sendDataXm(XM_0);
+  sendDataXm(ID);
 	sendDataXm(XM_BD_LENGTH);// number of parameters+3
 	sendDataXm(XM_0);
-    sendDataXm(XM_WRITE);
-    sendDataXm(XM_BAUD_RATE);//param 1
-    sendDataXm(XM_0);//param 2
-    sendDataXm(baud);//param 3
-    sendDataXm(CRC_L);
-    sendDataXm(CRC_H);
-    delayus(XM_TX_DELAY_TIME);
+  sendDataXm(XM_WRITE);
+  sendDataXm(XM_BAUD_RATE);//param 1
+  sendDataXm(XM_0);//param 2
+  sendDataXm(baud);//param 3
+  sendDataXm(CRC_L);
+  sendDataXm(CRC_H);
+  xmflush();
+  delayus(XM_TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
     
-    //return (read_error());                // Return the read error
+    return (read_error());                // Return the read error
 }
 
 int DynamixelXClass::setTorque(unsigned char ID, bool torque)
 {    
 	unsigned  char TxPacket[]={XM_START_FF,XM_START_FF,XM_START_FD,XM_0,ID,XM_TORQUE_LENGTH,XM_0,XM_WRITE,XM_TORQUE_ENABLE ,XM_0,torque,XM_0,XM_0};
-    unsigned short CRC= update_crc (0,TxPacket,11); //init crc_accum | packet | 5+Packet Lenght()
+  unsigned short CRC= update_crc (0,TxPacket,11); //init crc_accum | packet | 5+Packet Lenght()
 	unsigned short CRC_L= (CRC & 0x00FF);
 	unsigned short CRC_H= (CRC >> 8) & 0x00FF;
 	switchCom(Direction_Pin,Tx_MODE);
-    sendDataXm(XM_START_FF);                 
-    sendDataXm(XM_START_FF);
-    sendDataXm(XM_START_FD);
-    sendDataXm(XM_0);
-    sendDataXm(ID);
+  sendDataXm(XM_START_FF);                 
+  sendDataXm(XM_START_FF);
+  sendDataXm(XM_START_FD);
+  sendDataXm(XM_0);
+  sendDataXm(ID);
 	sendDataXm(XM_TORQUE_LENGTH);// number of parameters+3
 	sendDataXm(XM_0);
-    sendDataXm(XM_WRITE);
-    sendDataXm(XM_TORQUE_ENABLE );//param 1
-    sendDataXm(XM_0);//param 2
-    sendDataXm(torque);//param 3
-    sendDataXm(CRC_L);
-    sendDataXm(CRC_H);
-    delayus(XM_TX_DELAY_TIME);
+  sendDataXm(XM_WRITE);
+  sendDataXm(XM_TORQUE_ENABLE );//param 1
+  sendDataXm(XM_0);//param 2
+  sendDataXm(torque);//param 3
+  sendDataXm(CRC_L);
+  sendDataXm(CRC_H);
+  xmflush();
+  delayus(XM_TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
     
-    //return (read_error());                // Return the read error
+    return (read_error());                // Return the read error
+}
+
+
+int DynamixelXClass::setRDT(unsigned char ID, unsigned char RDT) // SET return delay time
+{    
+	unsigned  char TxPacket[]={XM_START_FF,XM_START_FF,XM_START_FD,XM_0,ID,XM_RDT_LENGTH,XM_0,XM_WRITE,XM_RETURN_DELAY_TIME,XM_0,RDT,XM_0,XM_0};
+  unsigned short CRC= update_crc (0,TxPacket,11); //init crc_accum | packet | 5+Packet Lenght()
+	unsigned short CRC_L= (CRC & 0x00FF);
+	unsigned short CRC_H= (CRC >> 8) & 0x00FF;
+	switchCom(Direction_Pin,Tx_MODE);
+  sendDataXm(XM_START_FF);                 
+  sendDataXm(XM_START_FF);
+  sendDataXm(XM_START_FD);
+  sendDataXm(XM_0);
+  sendDataXm(ID);
+	sendDataXm(XM_RDT_LENGTH);// number of parameters+3
+	sendDataXm(XM_0);
+  sendDataXm(XM_WRITE);
+  sendDataXm(XM_RETURN_DELAY_TIME);//param 1
+  sendDataXm(XM_0);//param 2
+  sendDataXm(RDT);//param 3
+  sendDataXm(CRC_L);
+  sendDataXm(CRC_H);
+  xmflush();
+  delayus(XM_TX_DELAY_TIME);
+	switchCom(Direction_Pin,Rx_MODE);
+    
+    return (read_error());                // Return the read error
 }
 
 DynamixelClass Dynamixel;
