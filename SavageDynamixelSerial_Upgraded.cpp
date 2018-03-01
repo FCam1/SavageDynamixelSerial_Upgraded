@@ -71,7 +71,7 @@ int DynamixelClass::read_error(void)
 int DynamixelXClass::read_error(void)
 {
 	Time_Counter = 0;
-	while((availableDataXm() < 9) & (Time_Counter < TIME_OUT)){  // Wait for Data
+	while((availableDataXm() < 11) & (Time_Counter < TIME_OUT)){  // Wait the end of the return packet
 		Time_Counter++;
 		delayus(1);
 	}
