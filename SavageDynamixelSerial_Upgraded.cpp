@@ -28,6 +28,7 @@
 #define axflush()       (Serial4.flush())         // Wait the end of the transfert
 //Protocol 2.0
 #define sendDataXm(args)  (Serial5.write(args))    // Write Over Serial
+#define sendDataX(args,gg)  (Serial5.write(args,gg))    // Write Over Serial
 #define availableDataXm() (Serial5.available())    // Check Serial Data Available
 #define readDataXm()      (Serial5.read())         // Read Serial Data
 #define peekDataXm()      (Serial5.peek())         // Peek Serial Data
@@ -71,7 +72,7 @@ int DynamixelClass::read_error(void)
 int DynamixelXClass::read_error(void)
 {
 	Time_Counter = 0;
-	while((availableDataXm() < 11) & (Time_Counter < TIME_OUT)){  // Wait the end of the return packet
+	while((availableDataXm() < 9) & (Time_Counter < TIME_OUT)){  // Wait the end of the return packet
 		Time_Counter++;
 		delayus(1);
 	}
@@ -181,6 +182,15 @@ unsigned short DynamixelXClass:: update_crc(unsigned short crc_accum, unsigned c
   }
   return crc_accum;
 }
+//Privates structures
+struct PacketSize4 packetsize4;
+struct PacketSize4* ptr_packetsize4;
+
+struct PacketSize1  packetsize1;
+struct PacketSize1* ptr_packetsize1;
+
+struct PacketSync4 packetsync4;
+struct PacketSync4* ptr_packetsync4;
 
 // Public Methods //////////////////////////////////////////////////////////////
 //Protocol 1.0
@@ -1082,32 +1092,24 @@ void DynamixelXClass::begin(long baud, unsigned char directionPin)
 
 int DynamixelXClass::move(unsigned char ID, int Position)
 {
-	int Position_L,Position_H;
-	Position_L= (Position & 0x00FF);
-	Position_H = (Position >> 8) & 0x00FF;
-	unsigned  char TxPacket[]={0xFF,0xFF,0xFD,0x00,ID,0x09,0x00,0x03,0x74,0x00,Position_L,Position_H,0x00,0x00,0x00,0x00};
-    unsigned short CRC= update_crc (0,TxPacket,14); //init crc_accum | packet | 5+Packet Lenght()
-	unsigned short CRC_L= (CRC & 0x00FF);
-	unsigned short CRC_H= (CRC >> 8) & 0x00FF;
+  ptr_packetsize4=&packetsize4;  
+	//TxPacket[16]={XM_START_FF,XM_START_FF,XM_START_FD,XM_0,ID,XM_GOAL_LENGTH,XM_0,XM_WRITE,XM_GOAL_POSITION,XM_0,Position_L,Position_H,XM_0,XM_0,crc_L,crc_H};
+  packetsize4.id=ID;
+  packetsize4.instruction=XM_WRITE;
+  packetsize4.adress_L=XM_GOAL_POSITION;
+  packetsize4.value_L=(Position & 0x00FF);
+  packetsize4.value_H=(Position >> 8) & 0x00FF;
+  packetsize4.crc_L= 0x00;//(pour son calcul les valeurs du CRC doivent être misent à 0 dans le packet)
+	packetsize4.crc_H= 0x00;
+  //calcul CRC 
+  unsigned short CRC= update_crc (0,(uint8_t*)ptr_packetsize4,14); //(init crc_accum | packet | 5+Packet Lenght())
+  packetsize4.crc_L= (CRC & 0x00FF);//MAJ CRC avec valeur calculée
+	packetsize4.crc_H= (CRC >> 8) & 0x00FF;
+  //Send Data
 	switchCom(Direction_Pin,Tx_MODE);
-    sendDataXm(XM_START_FF);                 
-    sendDataXm(XM_START_FF);
-    sendDataXm(XM_START_FD);
-    sendDataXm(XM_0);
-    sendDataXm(ID);
-    sendDataXm(XM_GOAL_LENGTH );// number of parameters+3
-    sendDataXm(XM_0);
-    sendDataXm(XM_WRITE);
-    sendDataXm(XM_GOAL_POSITION );
-    sendDataXm(XM_0);
-    sendDataXm(Position_L);
-    sendDataXm(Position_H);
-    sendDataXm(XM_0);
-    sendDataXm(XM_0);
-    sendDataXm(CRC_L);
-    sendDataXm(CRC_H);
-    xmflush();
-	delayus(XM_TX_DELAY_TIME);
+  sendDataX((uint8_t*)ptr_packetsize4,16);//Size of the packet
+  xmflush();//wait the end of the transmission
+	delayus(XM_TX_DELAY_TIME);//wait before enable the response of the dynamixel 
 	switchCom(Direction_Pin,Rx_MODE);
 
     return (read_error());                 // Return the read error
@@ -1116,24 +1118,21 @@ int DynamixelXClass::move(unsigned char ID, int Position)
 
 int DynamixelXClass::setBD(unsigned char ID, int baud)
 {    
-	unsigned  char TxPacket[]={XM_START_FF,XM_START_FF,XM_START_FD,XM_0,ID,XM_BD_LENGTH,XM_0,XM_WRITE,XM_BAUD_RATE,XM_0,baud,XM_0,XM_0};
-  unsigned short CRC= update_crc (0,TxPacket,11); //init crc_accum | packet | 5+Packet Lenght()
-	unsigned short CRC_L= (CRC & 0x00FF);
-	unsigned short CRC_H= (CRC >> 8) & 0x00FF;
+  ptr_packetsize1=&packetsize1; 
+	// TxPacket[13]={XM_START_FF,XM_START_FF,XM_START_FD,XM_0,ID,XM_BD_LENGTH,XM_0,XM_WRITE,XM_BAUD_RATE,XM_0,baud,XM_0,XM_0};
+  packetsize1.id=ID;
+  packetsize1.instruction=XM_WRITE;
+  packetsize1.adress_L=XM_BAUD_RATE ;
+  packetsize1.value=baud;
+  packetsize1.crc_L= 0x00;//(pour son calcul les valeurs du CRC doivent être misent à 0 dans le packet)
+	packetsize1.crc_H= 0x00;
+  //calcul CRC
+  unsigned short CRC= update_crc (0,(uint8_t*)ptr_packetsize1,11); //init crc_accum | packet | 5+Packet Lenght()
+	packetsize1.crc_L= (CRC & 0x00FF);
+	packetsize1.crc_H= (CRC >> 8) & 0x00FF;  
+  //Send Data
 	switchCom(Direction_Pin,Tx_MODE);
-  sendDataXm(XM_START_FF);                 
-  sendDataXm(XM_START_FF);
-  sendDataXm(XM_START_FD);
-  sendDataXm(XM_0);
-  sendDataXm(ID);
-	sendDataXm(XM_BD_LENGTH);// number of parameters+3
-	sendDataXm(XM_0);
-  sendDataXm(XM_WRITE);
-  sendDataXm(XM_BAUD_RATE);//param 1
-  sendDataXm(XM_0);//param 2
-  sendDataXm(baud);//param 3
-  sendDataXm(CRC_L);
-  sendDataXm(CRC_H);
+  sendDataX((uint8_t*)ptr_packetsize1,13);//Size of the packet
   xmflush();
   delayus(XM_TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
@@ -1143,24 +1142,21 @@ int DynamixelXClass::setBD(unsigned char ID, int baud)
 
 int DynamixelXClass::setTorque(unsigned char ID, bool torque)
 {    
-	unsigned  char TxPacket[]={XM_START_FF,XM_START_FF,XM_START_FD,XM_0,ID,XM_TORQUE_LENGTH,XM_0,XM_WRITE,XM_TORQUE_ENABLE ,XM_0,torque,XM_0,XM_0};
-  unsigned short CRC= update_crc (0,TxPacket,11); //init crc_accum | packet | 5+Packet Lenght()
-	unsigned short CRC_L= (CRC & 0x00FF);
-	unsigned short CRC_H= (CRC >> 8) & 0x00FF;
+  ptr_packetsize1=&packetsize1;  
+  //TxPacket[13]={XM_START_FF,XM_START_FF,XM_START_FD,XM_0,ID,XM_TORQUE_LENGTH,XM_0,XM_WRITE,XM_TORQUE_ENABLE ,XM_0,torque,XM_0,XM_0};
+  packetsize1.id=ID;
+  packetsize1.instruction=XM_WRITE;
+  packetsize1.adress_L=XM_TORQUE_ENABLE ;
+  packetsize1.value=torque;
+  packetsize1.crc_L= 0x00;//(pour son calcul les valeurs du CRC doivent être misent à 0 dans le packet)
+	packetsize1.crc_H= 0x00;
+  //calcul CRC
+  unsigned short CRC= update_crc (0,(uint8_t*)ptr_packetsize1,11); //init crc_accum | packet | 5+Packet Lenght()
+	packetsize1.crc_L= (CRC & 0x00FF);
+	packetsize1.crc_H= (CRC >> 8) & 0x00FF;
+  //Send Data
 	switchCom(Direction_Pin,Tx_MODE);
-  sendDataXm(XM_START_FF);                 
-  sendDataXm(XM_START_FF);
-  sendDataXm(XM_START_FD);
-  sendDataXm(XM_0);
-  sendDataXm(ID);
-	sendDataXm(XM_TORQUE_LENGTH);// number of parameters+3
-	sendDataXm(XM_0);
-  sendDataXm(XM_WRITE);
-  sendDataXm(XM_TORQUE_ENABLE );//param 1
-  sendDataXm(XM_0);//param 2
-  sendDataXm(torque);//param 3
-  sendDataXm(CRC_L);
-  sendDataXm(CRC_H);
+  sendDataX((uint8_t*)ptr_packetsize1,13);//Size of the packet
   xmflush();
   delayus(XM_TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
@@ -1171,24 +1167,54 @@ int DynamixelXClass::setTorque(unsigned char ID, bool torque)
 
 int DynamixelXClass::setRDT(unsigned char ID, unsigned char RDT) // SET return delay time
 {    
-	unsigned  char TxPacket[]={XM_START_FF,XM_START_FF,XM_START_FD,XM_0,ID,XM_RDT_LENGTH,XM_0,XM_WRITE,XM_RETURN_DELAY_TIME,XM_0,RDT,XM_0,XM_0};
-  unsigned short CRC= update_crc (0,TxPacket,11); //init crc_accum | packet | 5+Packet Lenght()
-	unsigned short CRC_L= (CRC & 0x00FF);
-	unsigned short CRC_H= (CRC >> 8) & 0x00FF;
+  ptr_packetsize1=&packetsize1; 
+	//TxPacket[13]={XM_START_FF,XM_START_FF,XM_START_FD,XM_0,ID,XM_RDT_LENGTH,XM_0,XM_WRITE,XM_RETURN_DELAY_TIME,XM_0,RDT,XM_0,XM_0};
+  packetsize1.id=ID;
+  packetsize1.instruction=XM_WRITE;
+  packetsize1.adress_L=XM_RETURN_DELAY_TIME;
+  packetsize1.value=RDT;
+  packetsize1.crc_L= 0x00;//(pour son calcul les valeurs du CRC doivent être misent à 0 dans le packet)
+	packetsize1.crc_H= 0x00;
+  //calcul CRC
+  unsigned short CRC= update_crc (0,(uint8_t*)ptr_packetsize1,11); //init crc_accum | packet | 5+Packet Lenght()
+	packetsize1.crc_L= (CRC & 0x00FF);
+	packetsize1.crc_H= (CRC >> 8) & 0x00FF;
+  //Send Data
 	switchCom(Direction_Pin,Tx_MODE);
-  sendDataXm(XM_START_FF);                 
-  sendDataXm(XM_START_FF);
-  sendDataXm(XM_START_FD);
-  sendDataXm(XM_0);
-  sendDataXm(ID);
-	sendDataXm(XM_RDT_LENGTH);// number of parameters+3
-	sendDataXm(XM_0);
-  sendDataXm(XM_WRITE);
-  sendDataXm(XM_RETURN_DELAY_TIME);//param 1
-  sendDataXm(XM_0);//param 2
-  sendDataXm(RDT);//param 3
-  sendDataXm(CRC_L);
-  sendDataXm(CRC_H);
+  sendDataX((uint8_t*)ptr_packetsize1,13);//Size of the packet
+  xmflush();
+  delayus(XM_TX_DELAY_TIME);
+	switchCom(Direction_Pin,Rx_MODE);
+    
+    return (read_error());                // Return the read error
+}
+
+
+int DynamixelXClass::synWritePos(unsigned char ID1, int Position1,unsigned char ID2, int Position2) 
+{    
+	ptr_packetsync4=&packetsync4; 
+  packetsync4.adress_L=XM_GOAL_POSITION;
+  packetsync4.datalength_L=XM_SYNC_WRITE_LENGTH; 
+  packetsync4.datalength_H=XM_0;
+  packetsync4.id1 =ID1; //Parameter 5
+  packetsync4.data11=(Position1 & 0x00FF); //Parameter 6
+  packetsync4.data12=(Position1 >> 8) & 0x00FF; //Parameter 7
+  packetsync4.data13=XM_0; //Parameter 8
+  packetsync4.data14=XM_0; //Parameter 9
+  packetsync4.id2=ID2; //Parameter 10
+  packetsync4.data21=(Position2 & 0x00FF);  //Parameter 11
+  packetsync4.data22=(Position2 >> 8) & 0x00FF;; //Parameter 12
+  packetsync4.data23=XM_0; //Parameter 13
+  packetsync4.data24=XM_0; //Parameter 14
+  packetsync4.crc_L= 0x00;//(pour son calcul les valeurs du CRC doivent être misent à 0 dans le packet)
+	packetsync4.crc_H= 0x00;
+  //calcul CRC
+  unsigned short CRC= update_crc (0,(uint8_t*)ptr_packetsync4,22); //init crc_accum | packet | 5+Packet Lenght()
+	packetsync4.crc_L= (CRC & 0x00FF);
+	packetsync4.crc_H= (CRC >> 8) & 0x00FF;
+  //Send Data
+	switchCom(Direction_Pin,Tx_MODE);
+  sendDataX((uint8_t*)ptr_packetsync4,24);//Size of the packet
   xmflush();
   delayus(XM_TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);

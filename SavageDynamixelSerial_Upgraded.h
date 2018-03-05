@@ -174,7 +174,7 @@
 #define AX_START                    255
 #define AX_CCW_AL_L                 255 
 #define AX_CCW_AL_H                 3
-#define TIME_OUT                    100//500000         // Este parametro depende de la velocidad de transmision
+#define TIME_OUT                    1000//500000         // Este parametro depende de la velocidad de transmision
 #define TX_DELAY_TIME			          1   //1us     // Este parametro depende de la velocidad de transmision - pero pueden ser cambiados para mayor velocidad.
 #define Tx_MODE                     1
 #define Rx_MODE                     0
@@ -193,7 +193,7 @@
 	
     // Instruction Set ///////////////////////////////////////////////////////////////	
 #define XM_WRITE 					          3  
-  
+#define XM_SYNC_WRITE               131
 	// Specials ///////////////////////////////////////////////////////////////    
 #define XM_START_FF                 255
 #define XM_START_FD					        253	
@@ -202,8 +202,12 @@
 #define XM_BD_LENGTH				        6
 #define XM_TORQUE_LENGTH			      6
 #define XM_GOAL_LENGTH              9
+#define XM_SYNC_WRITE_LENGTH        4
 #define XM_TX_DELAY_TIME			      1 	
-	
+
+#define LENGTH_6			              6//number of parameters+3
+#define LENGTH_9                    9
+#define LENGTH_17                   17
 
 
 #include <inttypes.h>
@@ -311,18 +315,77 @@ private:
 	int read_error(void);
 	
 	unsigned short update_crc(unsigned short crc_accum, unsigned char *data_blk_ptr, unsigned short data_blk_size);
+
 	
-public:
+ public: 
 
 	void begin(long baud, unsigned char directionPin);
 	int move(unsigned char ID, int Position);
   int setRDT(unsigned char ID, unsigned char RDT); // SET return delay time
 	int setBD(unsigned char ID, int baud);//0:9600, 1:57600(default), 2:115200, 3:1M, 4:2M, 5:3M, 6:4M, 7:4.5M
 	int setTorque(unsigned char ID, bool torque);
+  int synWritePos(unsigned char ID1, int Position1,unsigned char ID2, int Position2); 
 	
 };
 
 extern DynamixelClass Dynamixel;
 extern DynamixelXClass DynamixelX;
+
+//Structures 
+  struct PacketSize4{//All data Packets with data size of 4 
+    unsigned char header [3]={XM_START_FF,XM_START_FF,XM_START_FD}; //defined 
+    unsigned char reserved = XM_0; //defined 
+    unsigned char id;//parameter
+    unsigned char packetlenght_L=LENGTH_9; //defined
+    unsigned char packetlenght_H=XM_0; //defined
+    unsigned char instruction; //parameter
+    unsigned char adress_L; //Parameter 1
+    unsigned char adress_H =XM_0; //Parameter 2
+    unsigned char value_L ; //Parameter 3
+    unsigned char value_H ; //Parameter 4
+    unsigned char value5 = XM_0 ; //Parameter 5 but defined 
+    unsigned char value6 = XM_0 ; //Parameter 6 but defined 
+    unsigned char crc_L; //parameter
+    unsigned char crc_H; //parameter
+  };
+
+    struct PacketSize1{//All data Packets with data size of 1 
+    unsigned char header [3]={XM_START_FF,XM_START_FF,XM_START_FD}; //defined 
+    unsigned char reserved = XM_0; //defined 
+    unsigned char id;//parameter
+    unsigned char packetlenght_L=LENGTH_6; //defined
+    unsigned char packetlenght_H=XM_0; //defined
+    unsigned char instruction; //parameter
+    unsigned char adress_L; //Parameter 1
+    unsigned char adress_H =XM_0; //Parameter 2
+    unsigned char value ; //Parameter 3
+    unsigned char crc_L; //parameter
+    unsigned char crc_H; //parameter
+  };
+  
+    struct PacketSync4{//Sync for 2 motors and data size of 4 
+    unsigned char header [3]={XM_START_FF,XM_START_FF,XM_START_FD}; //defined 
+    unsigned char reserved = XM_0; //defined 
+    unsigned char id = 0xFE;//Broadcast ID
+    unsigned char packetlenght_L=LENGTH_17; //defined
+    unsigned char packetlenght_H=XM_0; //defined
+    unsigned char instruction=XM_SYNC_WRITE; //defined
+    unsigned char adress_L; //Parameter 1
+    unsigned char adress_H =XM_0; //Parameter 2
+    unsigned char datalength_L  ; //Parameter 3
+    unsigned char datalength_H  ;//Parameter 4
+    unsigned char id1 ; //Parameter 5
+    unsigned char data11 ; //Parameter 6
+    unsigned char data12 ; //Parameter 7
+    unsigned char data13 ; //Parameter 8
+    unsigned char data14 ; //Parameter 9
+    unsigned char id2 ; //Parameter 10
+    unsigned char data21; //Parameter 11
+    unsigned char data22 ; //Parameter 12
+    unsigned char data23 ; //Parameter 13
+    unsigned char data24; //Parameter 14
+    unsigned char crc_L; //parameter
+    unsigned char crc_H; //parameter
+  };
 
 #endif
