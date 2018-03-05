@@ -205,6 +205,7 @@
 #define XM_SYNC_WRITE_LENGTH        4
 #define XM_TX_DELAY_TIME			      1 	
 
+#define LENGTH_4			              4
 #define LENGTH_6			              6//number of parameters+3
 #define LENGTH_9                    9
 #define LENGTH_17                   17
@@ -285,8 +286,7 @@ public:
 	int torqueStatus(unsigned char ID, bool Status);
 	int ledStatus(unsigned char ID, bool Status);
 	
-	//void moveX(unsigned char ID, int Position);
-	//void beginX(long baud, unsigned char directionPin);
+  int synWritePos(unsigned char ID1, int Position1,unsigned char ID2, int Position2) ;
 	
 };
 

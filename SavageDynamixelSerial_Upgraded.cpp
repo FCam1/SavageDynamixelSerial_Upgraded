@@ -1080,6 +1080,46 @@ int DynamixelClass::readLoad(unsigned char ID)
     }
 	return (Load_Long_Byte);     // Returns the read position
 }
+
+int DynamixelClass::synWritePos(unsigned char ID1, int Position1,unsigned char ID2, int Position2) 
+{	
+  char Position1_H = Position1 >> 8;           // 16 bits - 2 x 8 bits variables
+  char Position1_L = Position1;
+  char Position2_H = Position2 >> 8;           // 16 bits - 2 x 8 bits variables
+  char Position2_L = Position2;
+	Checksum = (~(BROADCAST_ID + 10 + AX_SYNC_WRITE + AX_GOAL_POSITION_L +2+ ID1+ Position1_L+Position1_H+ID2+Position2_L+Position2_H))&0xFF;
+    
+	switchCom(Direction_Pin,Tx_MODE);
+  sendData(AX_START);                 // Send Instructions over Serial
+  sendData(AX_START);
+  sendData(BROADCAST_ID);
+  
+  sendData(10);//Length = (L+1) X N + 4   (L: Data Length per RX-64, N: the number of RX-64s)
+  sendData(AX_SYNC_WRITE);
+  sendData(AX_GOAL_POSITION_L); 
+  sendData(2); // number of "sync parameters" for each motor
+  sendData(ID1);
+  sendData(Position1_L);//"sync parameter"
+  sendData(Position1_H);//"sync parameter"
+  sendData(ID2);
+  sendData(Position2_L);
+  sendData(Position2_H);
+  
+  sendData(Checksum);
+  axflush();
+	delayus(TX_DELAY_TIME);
+	switchCom(Direction_Pin,Rx_MODE);
+
+   // return (read_error());                 // No Return  with synWrite
+ 
+}
+
+
+
+
+
+
+
 // Public Methods //////////////////////////////////////////////////////////////
 //Protocol 2.0
 
@@ -1219,7 +1259,7 @@ int DynamixelXClass::synWritePos(unsigned char ID1, int Position1,unsigned char 
   delayus(XM_TX_DELAY_TIME);
 	switchCom(Direction_Pin,Rx_MODE);
     
-    return (read_error());                // Return the read error
+   // return (read_error());                 // No Return  with synWrite
 }
 
 DynamixelClass Dynamixel;
