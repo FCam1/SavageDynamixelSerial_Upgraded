@@ -4,6 +4,14 @@ Based on the famous "Savage librarie for dynamixel AX" http://savageelectronics.
 
 The original librarie allow to control only the dynamixels with Protocol 1.0. This new librarie have been extended to control the Dynamixels with Protocol 2.0. 
 
+Current State of librarie: 
+begin(long baud, unsigned char directionPin)
+setRDT(unsigned char ID, unsigned char RDT)
+setBD(unsigned char ID, int baud)
+setTorque(unsigned char ID, bool torque);
+synWritePos(unsigned char ID1, int Position1,unsigned char ID2, int Position2)
+
+
 Current settings : 
 - Serial4 for protocol 1.0 
 - serial5 for protocol 2.0 
