@@ -174,7 +174,7 @@
 #define AX_START                    255
 #define AX_CCW_AL_L                 255 
 #define AX_CCW_AL_H                 3
-#define TIME_OUT                    1000//500000         // Este parametro depende de la velocidad de transmision
+#define TIME_OUT                    200//500000         // Este parametro depende de la velocidad de transmision
 #define TX_DELAY_TIME			          1   //1us     // Este parametro depende de la velocidad de transmision - pero pueden ser cambiados para mayor velocidad.
 #define Tx_MODE                     1
 #define Rx_MODE                     0
@@ -188,12 +188,15 @@
 #define XM_RETURN_DELAY_TIME        9  
 #define XM_TORQUE_ENABLE            64
 #define XM_GOAL_POSITION          	116	
+#define XM_PRESENT_POSITION         132
 
 	// Status Return Levels ///////////////////////////////////////////////////////////////
 	
-    // Instruction Set ///////////////////////////////////////////////////////////////	
+  // Instruction Set ///////////////////////////////////////////////////////////////	
+#define XM_READ                     2 
 #define XM_WRITE 					          3  
 #define XM_SYNC_WRITE               131
+#define XM_SYNC_READ                130
 	// Specials ///////////////////////////////////////////////////////////////    
 #define XM_START_FF                 255
 #define XM_START_FD					        253	
@@ -207,6 +210,7 @@
 
 #define LENGTH_4			              4
 #define LENGTH_6			              6//number of parameters+3
+#define LENGTH_7			              7
 #define LENGTH_9                    9
 #define LENGTH_17                   17
 
@@ -302,6 +306,7 @@ private:
 	unsigned char Speed_Low_Byte;
 	unsigned char Load_High_Byte;
 	unsigned char Load_Low_Byte;
+  unsigned char detectID;
 	
 	int Moving_Byte;
 	int RWS_Byte;
@@ -325,6 +330,9 @@ private:
 	int setBD(unsigned char ID, int baud);//0:9600, 1:57600(default), 2:115200, 3:1M, 4:2M, 5:3M, 6:4M, 7:4.5M
 	int setTorque(unsigned char ID, bool torque);
   int synWritePos(unsigned char ID1, int Position1,unsigned char ID2, int Position2); 
+  
+  int readPosition(unsigned char ID);
+  int syncReadPos(unsigned char ID1, unsigned char ID2);
 	
 };
 
@@ -332,58 +340,78 @@ extern DynamixelClass Dynamixel;
 extern DynamixelXClass DynamixelX;
 
 //Structures 
-  struct PacketSize4{//All data Packets with data size of 4 
-    unsigned char header [3]={XM_START_FF,XM_START_FF,XM_START_FD}; //defined 
-    unsigned char reserved = XM_0; //defined 
-    unsigned char id;//parameter
+    struct ReturnPacket2{
+    uint16_t value1 ;
+    uint16_t value2 ;
+  };
+
+    struct PacketSize3{//All data Packets with 3 parameters
+    unsigned char header [3]={XM_START_FF,XM_START_FF,XM_START_FD} ;//defined 
+    unsigned char reserved = XM_0 ;//defined 
+    unsigned char id ;//parameter
+    unsigned char packetlenght_L=LENGTH_6 ;//defined
+    unsigned char packetlenght_H=XM_0 ;//defined
+    unsigned char instruction ;//parameter
+    unsigned char param1 ;//adress Low
+    unsigned char param2=XM_0 ;//adress High
+    unsigned char param3 ;//value
+    unsigned char crc_L ;//parameter
+    unsigned char crc_H ;//parameter
+  };
+  
+    struct PacketSize4{//All data Packets with 4 parameters
+    unsigned char header [3]={XM_START_FF,XM_START_FF,XM_START_FD} ;//defined 
+    unsigned char reserved = XM_0 ; //defined 
+    unsigned char id ;//parameter
+    unsigned char packetlenght_L=LENGTH_7 ;//defined
+    unsigned char packetlenght_H=XM_0 ;//defined
+    unsigned char instruction ; //parameter
+    unsigned char param1 ; //adress Low
+    unsigned char param2=XM_0 ;//adress High
+    unsigned char param3 ; //value Low
+    unsigned char param4 ; //value High
+    unsigned char crc_L ; //parameter
+    unsigned char crc_H ; //parameter
+  };
+  
+    struct PacketSize6{//All data Packets with 6 parameters
+    unsigned char header [3]={XM_START_FF,XM_START_FF,XM_START_FD} ; //defined 
+    unsigned char reserved = XM_0 ; //defined 
+    unsigned char id ;//parameter
     unsigned char packetlenght_L=LENGTH_9; //defined
     unsigned char packetlenght_H=XM_0; //defined
     unsigned char instruction; //parameter
-    unsigned char adress_L; //Parameter 1
-    unsigned char adress_H =XM_0; //Parameter 2
-    unsigned char value_L ; //Parameter 3
-    unsigned char value_H ; //Parameter 4
-    unsigned char value5 = XM_0 ; //Parameter 5 but defined 
-    unsigned char value6 = XM_0 ; //Parameter 6 but defined 
-    unsigned char crc_L; //parameter
-    unsigned char crc_H; //parameter
+    unsigned char param1 ; //adress Low
+    unsigned char param2=XM_0; //adress High
+    unsigned char param3 ; //value Low
+    unsigned char param4 ; //value High
+    unsigned char param5 ; //value
+    unsigned char param6 ; //value
+    unsigned char crc_L ; //parameter
+    unsigned char crc_H ; //parameter
   };
 
-    struct PacketSize1{//All data Packets with data size of 1 
-    unsigned char header [3]={XM_START_FF,XM_START_FF,XM_START_FD}; //defined 
-    unsigned char reserved = XM_0; //defined 
-    unsigned char id;//parameter
-    unsigned char packetlenght_L=LENGTH_6; //defined
-    unsigned char packetlenght_H=XM_0; //defined
-    unsigned char instruction; //parameter
-    unsigned char adress_L; //Parameter 1
-    unsigned char adress_H =XM_0; //Parameter 2
-    unsigned char value ; //Parameter 3
-    unsigned char crc_L; //parameter
-    unsigned char crc_H; //parameter
-  };
-  
-    struct PacketSync4{//Sync for 2 motors and data size of 4 
+    struct PacketSync14{//Sync for 2 motors and 14 parameters
     unsigned char header [3]={XM_START_FF,XM_START_FF,XM_START_FD}; //defined 
     unsigned char reserved = XM_0; //defined 
     unsigned char id = 0xFE;//Broadcast ID
     unsigned char packetlenght_L=LENGTH_17; //defined
     unsigned char packetlenght_H=XM_0; //defined
     unsigned char instruction=XM_SYNC_WRITE; //defined
-    unsigned char adress_L; //Parameter 1
-    unsigned char adress_H =XM_0; //Parameter 2
-    unsigned char datalength_L  ; //Parameter 3
-    unsigned char datalength_H  ;//Parameter 4
-    unsigned char id1 ; //Parameter 5
-    unsigned char data11 ; //Parameter 6
-    unsigned char data12 ; //Parameter 7
-    unsigned char data13 ; //Parameter 8
-    unsigned char data14 ; //Parameter 9
-    unsigned char id2 ; //Parameter 10
-    unsigned char data21; //Parameter 11
-    unsigned char data22 ; //Parameter 12
-    unsigned char data23 ; //Parameter 13
-    unsigned char data24; //Parameter 14
+    unsigned char param1; //adress Low
+    unsigned char param2=XM_0; //adress High
+    unsigned char param3; //datalength_L
+    unsigned char param4  ;//datalength_H
+    unsigned char param5 ; //Parameter 5
+    unsigned char param6 ; //Parameter 6
+    unsigned char param7 ; //Parameter 7
+    unsigned char param8 ; //Parameter 8
+    unsigned char param9 ; //Parameter 9
+    unsigned char param10 ; //Parameter 10
+    unsigned char param11; //Parameter 11
+    unsigned char param12 ; //Parameter 12
+    unsigned char param13 ; //Parameter 13
+    unsigned char param14; //Parameter 14
     unsigned char crc_L; //parameter
     unsigned char crc_H; //parameter
   };
