@@ -183,6 +183,7 @@
 	//////////////////////////PROTOCOL 2.0//////////////////////////////////////
 	// EEPROM AREA  ///////////////////////////////////////////////////////////
 #define XM_BAUD_RATE                8	
+#define XM_LED                      65
 	
 	// RAM AREA  //////////////////////////////////////////////////////////////
 #define XM_RETURN_DELAY_TIME        9  
@@ -193,6 +194,7 @@
 	// Status Return Levels ///////////////////////////////////////////////////////////////
 	
   // Instruction Set ///////////////////////////////////////////////////////////////	
+#define XM_PING                     1
 #define XM_READ                     2 
 #define XM_WRITE 					          3  
 #define XM_SYNC_WRITE               131
@@ -208,6 +210,7 @@
 #define XM_SYNC_WRITE_LENGTH        4
 #define XM_TX_DELAY_TIME			      1 	
 
+#define LENGTH_3                    3
 #define LENGTH_4			              4
 #define LENGTH_6			              6//number of parameters+3
 #define LENGTH_7			              7
@@ -307,6 +310,9 @@ private:
 	unsigned char Load_High_Byte;
 	unsigned char Load_Low_Byte;
   unsigned char detectID;
+  unsigned char Model_Low_Byte;
+  unsigned char Model_High_Byte;
+  unsigned char Fw_ver; 
 	
 	int Moving_Byte;
 	int RWS_Byte;
@@ -316,6 +322,7 @@ private:
 	int Temperature_Byte;
 	int Voltage_Byte;
 	int Error_Byte; 
+  int Model_Long_Byte;
 	  
 	int read_error(void);
 	
@@ -327,12 +334,14 @@ private:
 	void begin(long baud, unsigned char directionPin);
 	int move(unsigned char ID, int Position);
   int setRDT(unsigned char ID, unsigned char RDT); // SET return delay time
+  int ledStatus(unsigned char ID, bool Status);
 	int setBD(unsigned char ID, int baud);//0:9600, 1:57600(default), 2:115200, 3:1M, 4:2M, 5:3M, 6:4M, 7:4.5M
 	int setTorque(unsigned char ID, bool torque);
   int synWritePos(unsigned char ID1, int Position1,unsigned char ID2, int Position2); 
   
   int readPosition(unsigned char ID);
   int syncReadPos(unsigned char ID1, unsigned char ID2);
+  int ping(unsigned char ID);
 	
 };
 
@@ -344,7 +353,25 @@ extern DynamixelXClass DynamixelX;
     uint16_t value1 ;
     uint16_t value2 ;
   };
+  
+    struct ReturnPacket3{
+    uint16_t value1 ;
+    uint16_t value2 ;
+    uint16_t value3 ;
+  };
 
+
+
+    struct PacketSize0{//All data Packets with 3 parameters
+    unsigned char header [3]={XM_START_FF,XM_START_FF,XM_START_FD} ;//defined 
+    unsigned char reserved = XM_0 ;//defined 
+    unsigned char id ;//parameter
+    unsigned char packetlenght_L=LENGTH_3;//defined
+    unsigned char packetlenght_H=XM_0 ;//defined
+    unsigned char instruction ;//parameter
+    unsigned char crc_L ;//parameter
+    unsigned char crc_H ;//parameter
+  };
     struct PacketSize3{//All data Packets with 3 parameters
     unsigned char header [3]={XM_START_FF,XM_START_FF,XM_START_FD} ;//defined 
     unsigned char reserved = XM_0 ;//defined 
