@@ -13,7 +13,9 @@ setRDT(unsigned char ID, unsigned char RDT)
 setBD(unsigned char ID, int baud)  
 setTorque(unsigned char ID, bool torque)  
 synWritePos(unsigned char ID1, int Position1,unsigned char ID2, int Position2)    
-syncReadPos(unsigned char ID1, unsigned char ID2) : returns 2 positions in a single variable
+syncReadPos(unsigned char ID1, unsigned char ID2) : returns 2 positions in a single variable  
+ping(unsigned char ID)  
+ledStatus(unsigned char ID, bool Status)  
 
 
 Current settings : 
