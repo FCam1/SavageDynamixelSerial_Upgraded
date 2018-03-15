@@ -1344,6 +1344,57 @@ int DynamixelXClass::readPosition(unsigned char ID)
         
 }
 	
+
+
+int DynamixelXClass::ping(unsigned char ID)
+{    
+  ptr_packetsize0=&packetsize0; 
+  packetsize0.id=ID;
+  packetsize0.instruction=XM_PING;
+  packetsize0.crc_L= 0x00;//(pour son calcul les valeurs du CRC doivent être misent à 0 dans le packet)
+  packetsize0.crc_H= 0x00;
+  //calcul CRC
+  unsigned short CRC= update_crc (0,(uint8_t*)ptr_packetsize0,8); //init crc_accum | packet | 5+Packet Lenght()
+  packetsize0.crc_L= (CRC & 0x00FF);
+  packetsize0.crc_H= (CRC >> 8) & 0x00FF;
+  //Send Data
+	switchCom(Direction_Pin,Tx_MODE);
+  sendDataX((uint8_t*)ptr_packetsize0,10);//Size of the packet
+  xmflush();
+  delayus(XM_TX_DELAY_TIME);
+	switchCom(Direction_Pin,Rx_MODE);
+    
+   //Reading of packets returned
+  ptr_returnpacket2=&returnpacket2;	
+  
+	while (availableDataXm() ){
+		Incoming_Byte = readDataXm(); //FF    
+		if ( (Incoming_Byte == 255) & (peekDataXm() == 255) ){
+      readDataXm();                                      // Start Bytes FF
+      readDataXm();                                      // Start Bytes FD
+      readDataXm();                                      // reserved
+			readDataXm();                                      // ID
+      readDataXm();                                      // Length L
+      readDataXm();                                      // Length H
+      readDataXm();                                      // Instruction
+      Error_Byte = readDataXm();                          // Error
+      if (Error_Byte != 0 )   // Error 
+        return (Error_Byte*(-1));
+      Model_Low_Byte = readDataXm();                     // Position Bytes Low
+      Model_High_Byte = readDataXm();                    // Position Bytes High
+        Model_Long_Byte = Model_High_Byte << 8;            
+        returnpacket2.value1  = Model_Long_Byte + Model_Low_Byte;
+      returnpacket2.value2 = readDataXm();
+      readDataXm();                                     //CRC
+      readDataXm();                                     //CRC
+      	        
+      //returnpacket2.value1 = Position_Long_Byte;
+      
+      return (*(uint32_t*)&returnpacket2);     // Returns the read position 
+    }
+  }
+}
+
 int DynamixelXClass::syncReadPos(unsigned char ID1, unsigned char ID2)
 {
   ptr_packetsize6=&packetsize6;  
@@ -1427,25 +1478,36 @@ int DynamixelXClass::syncReadPos(unsigned char ID1, unsigned char ID2)
   }
 }
 
-int DynamixelXClass::ping(unsigned char ID)
-{    
-  ptr_packetsize0=&packetsize0; 
-  packetsize0.id=ID;
-  packetsize0.instruction=XM_PING;
-  packetsize0.crc_L= 0x00;//(pour son calcul les valeurs du CRC doivent être misent à 0 dans le packet)
-  packetsize0.crc_H= 0x00;
-  //calcul CRC
-  unsigned short CRC= update_crc (0,(uint8_t*)ptr_packetsize0,8); //init crc_accum | packet | 5+Packet Lenght()
-  packetsize0.crc_L= (CRC & 0x00FF);
-  packetsize0.crc_H= (CRC >> 8) & 0x00FF;
+int DynamixelXClass::syncReadCur(unsigned char ID1, unsigned char ID2)
+{
+  ptr_packetsize6=&packetsize6;  
+  packetsize6.id=BROADCAST_ID;
+  packetsize6.instruction=XM_SYNC_READ;
+  packetsize6.param1=XM_PRESENT_CURRENT;
+  packetsize6.param3=LENGTH_2;
+  packetsize6.param4=XM_0;
+  packetsize6.param5=ID1;
+  packetsize6.param6=ID2;
+  packetsize6.crc_L= 0x00;//(pour son calcul les valeurs du CRC doivent être misent à 0 dans le packet)
+	packetsize6.crc_H= 0x00;
+  //calcul CRC 
+  unsigned short CRC= update_crc (0,(uint8_t*)ptr_packetsize6,14); //(init crc_accum | packet | 5+Packet Lenght())
+  packetsize6.crc_L= (CRC & 0x00FF);//MAJ CRC avec valeur calculée
+	packetsize6.crc_H= (CRC >> 8) & 0x00FF;
   //Send Data
 	switchCom(Direction_Pin,Tx_MODE);
-  sendDataX((uint8_t*)ptr_packetsize0,10);//Size of the packet
-  xmflush();
-  delayus(XM_TX_DELAY_TIME);
+  sendDataX((uint8_t*)ptr_packetsize6,16);//Size of the packet
+  xmflush();//wait the end of the transmission
+	delayus(XM_TX_DELAY_TIME);//wait before enable the response of the dynamixel 
 	switchCom(Direction_Pin,Rx_MODE);
-    
-   //Reading of packets returned
+
+  Load_Long_Byte = -1;
+  Time_Counter = 0;
+	while((availableDataXm() < 28) & (Time_Counter < 2*TIME_OUT)){  // Wait the end of the return of 2 packets
+  Time_Counter++;
+  delayus(1);
+	}
+  //Reading of packets returned
   ptr_returnpacket2=&returnpacket2;	
   
 	while (availableDataXm() ){
@@ -1454,28 +1516,47 @@ int DynamixelXClass::ping(unsigned char ID)
       readDataXm();                                      // Start Bytes FF
       readDataXm();                                      // Start Bytes FD
       readDataXm();                                      // reserved
-			readDataXm();                                      // ID
-      readDataXm();                                      // Length L
-      readDataXm();                                      // Length H
-      readDataXm();                                      // Instruction
-      Error_Byte = readDataXm();                          // Error
+			detectID = readDataXm();                           // ID
+      readDataXm();                                    // Length L
+      readDataXm();                                    // Length H
+      readDataXm();                                    // Instruction
+      Error_Byte = readDataXm();                       // Error
       if (Error_Byte != 0 )   // Error 
         return (Error_Byte*(-1));
-      Model_Low_Byte = readDataXm();                     // Position Bytes Low
-      Model_High_Byte = readDataXm();                    // Position Bytes High
-        Model_Long_Byte = Model_High_Byte << 8;            
-        returnpacket2.value1  = Model_Long_Byte + Model_Low_Byte;
-      returnpacket2.value2 = readDataXm();
+      Position_Low_Byte = readDataXm();                     // Position Bytes Low
+      Position_High_Byte = readDataXm();                    // Position Bytes High
+        Position_Long_Byte = Position_High_Byte << 8;            
+        Position_Long_Byte  = Position_Long_Byte + Position_Low_Byte;
       readDataXm();                                     //CRC
       readDataXm();                                     //CRC
       	        
-      //returnpacket2.value1 = Position_Long_Byte;
+      returnpacket2.value1 = Position_Long_Byte;
+ 
+                  
+      readDataXm();                                      // Start Bytes FF    
+      readDataXm();                                      // Start Bytes FF
+      readDataXm();                                      // Start Bytes FD
+      readDataXm();                                      // reserved
+      readDataXm();                                      // ID
+      readDataXm();                                    // Length L
+      readDataXm();                                    // Length H
+      readDataXm();                                    // Instruction
+      Error_Byte = readDataXm();                       // Error
+      if (Error_Byte != 0 )   // Error 
+        return (Error_Byte*(-1));
+      Position_Low_Byte = readDataXm();                     // Position Bytes Low
+      Position_High_Byte = readDataXm();                    // Position Bytes High
+        Position_Long_Byte = Position_High_Byte << 8;            
+        Position_Long_Byte  = Position_Long_Byte + Position_Low_Byte;
+      readDataXm();                                     //CRC
+      readDataXm();                                     //CRC   
       
-      return (*(uint32_t*)&returnpacket2);     // Returns the read position 
-    }
+      returnpacket2.value2 = Position_Long_Byte;  
+    	
+    return (*(uint32_t*)&returnpacket2);     // Returns the read position 
+    }        
   }
 }
-
 
 DynamixelClass Dynamixel;
 DynamixelXClass DynamixelX;

@@ -189,6 +189,7 @@
 #define XM_RETURN_DELAY_TIME        9  
 #define XM_TORQUE_ENABLE            64
 #define XM_GOAL_POSITION          	116	
+#define XM_PRESENT_CURRENT          126
 #define XM_PRESENT_POSITION         132
 
 	// Status Return Levels ///////////////////////////////////////////////////////////////
@@ -210,6 +211,7 @@
 #define XM_SYNC_WRITE_LENGTH        4
 #define XM_TX_DELAY_TIME			      1 	
 
+#define LENGTH_2                    2
 #define LENGTH_3                    3
 #define LENGTH_4			              4
 #define LENGTH_6			              6//number of parameters+3
@@ -340,8 +342,10 @@ private:
   int synWritePos(unsigned char ID1, int Position1,unsigned char ID2, int Position2); 
   
   int readPosition(unsigned char ID);
-  int syncReadPos(unsigned char ID1, unsigned char ID2);
   int ping(unsigned char ID);
+  int syncReadPos(unsigned char ID1, unsigned char ID2); //Sync Read of the position of 2 motors
+  int syncReadCur(unsigned char ID1, unsigned char ID2); //Sync Read of the current of 2 motors
+  
 	
 };
 
@@ -421,7 +425,7 @@ extern DynamixelXClass DynamixelX;
     struct PacketSync14{//Sync for 2 motors and 14 parameters
     unsigned char header [3]={XM_START_FF,XM_START_FF,XM_START_FD}; //defined 
     unsigned char reserved = XM_0; //defined 
-    unsigned char id = 0xFE;//Broadcast ID
+    unsigned char id = BROADCAST_ID;
     unsigned char packetlenght_L=LENGTH_17; //defined
     unsigned char packetlenght_H=XM_0; //defined
     unsigned char instruction=XM_SYNC_WRITE; //defined
@@ -442,5 +446,8 @@ extern DynamixelXClass DynamixelX;
     unsigned char crc_L; //parameter
     unsigned char crc_H; //parameter
   };
+  
+  
+
 
 #endif
