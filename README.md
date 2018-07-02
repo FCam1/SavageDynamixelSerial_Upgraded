@@ -5,18 +5,22 @@ Based on the famous "Savage librarie for dynamixel AX" http://savageelectronics.
 The original librarie allow to control only the dynamixels with Protocol 1.0. This new librarie have been extended to control the Dynamixels with Protocol 2.0. 
 
 Current State of librarie:   
-Protocol 1 :   
-Savage librarie + synWritePos(unsigned char ID1, int Position1,unsigned char ID2, int Position2)  
-Protocol 2 :  
-begin(long baud, unsigned char directionPin)  
-setRDT(unsigned char ID, unsigned char RDT)  
-ledStatus(unsigned char ID, bool Status)
-setBD(unsigned char ID, int baud)  
-setTorque(unsigned char ID, bool torque)  
-synWritePos(unsigned char ID1, int Position1,unsigned char ID2, int Position2)
-ping(unsigned char ID)
-syncReadPos(unsigned char ID1, unsigned char ID2) : returns 2 positions in a single variable
-syncReadCur(unsigned char ID1, unsigned char ID2) : returns 2 currents in a single variable
+## Protocol 1 :   
+Savage librarie + :  
+synWritePos(unsigned char ID1, int Position1,unsigned char ID2, int Position2)  
+readPosition(unsigned char ID, int *Pos_Long_Byte)
+
+## Protocol 2 :    
+ping (unsigned char ID)   
+begin (long baud, unsigned char directionPin)  
+setRDT (unsigned char ID, unsigned char RDT)  
+ledStatus (unsigned char ID, bool Status)
+setBD (unsigned char ID, int baud)  
+setTorque (unsigned char ID, bool torque)  
+synWritePos (unsigned char ID1, int Position1,unsigned char ID2, int Position2)  
+readPosition (unsigned char ID, int *Pos_Long_Byte)  
+syncReadPos (unsigned char ID1, int *Pos_Long_Byte1, unsigned char ID2, int *Pos_Long_Byte2)   
+syncReadCur (unsigned char ID1, unsigned char ID2) : returns 2 currents in a single variable
   
   
 
