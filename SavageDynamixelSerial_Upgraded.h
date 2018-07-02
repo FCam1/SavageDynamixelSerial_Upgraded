@@ -289,6 +289,7 @@ public:
 	int readTemperature(unsigned char ID);
 	int readVoltage(unsigned char ID);
 	int readPosition(unsigned char ID);
+  int readPosition(unsigned char ID, int *Pos_Long_Byte);
 	int readSpeed(unsigned char ID);
 	int readLoad(unsigned char ID);
 	
@@ -304,7 +305,7 @@ private:
 	
 	unsigned char Direction_Pin;
 	unsigned int Time_Counter;
-	unsigned char Incoming_Byte;               
+	unsigned char Incoming_Byte;
 	unsigned char Position_High_Byte;
 	unsigned char Position_Low_Byte;
 	unsigned char Speed_High_Byte;
@@ -320,7 +321,7 @@ private:
 	int RWS_Byte;
 	int Speed_Long_Byte;
 	int Load_Long_Byte;
-	int Position_Long_Byte;
+  int Position_Long_Byte;
 	int Temperature_Byte;
 	int Voltage_Byte;
 	int Error_Byte; 
@@ -342,8 +343,9 @@ private:
   int synWritePos(unsigned char ID1, int Position1,unsigned char ID2, int Position2); 
   
   int readPosition(unsigned char ID);
-  int ping(unsigned char ID);
-  int syncReadPos(unsigned char ID1, unsigned char ID2); //Sync Read of the position of 2 motors
+  int readPosition(unsigned char ID, int *Pos_Long_Byte);
+  struct ReturnPacket2 ping(unsigned char ID);
+  int syncReadPos(unsigned char ID1, int *Pos_Long_Byte1, unsigned char ID2, int *Pos_Long_Byte2); //Sync Read of the position of 2 motors
   int syncReadCur(unsigned char ID1, unsigned char ID2); //Sync Read of the current of 2 motors
   
 	
@@ -365,6 +367,11 @@ extern DynamixelXClass DynamixelX;
   };
 
 
+   struct structest{
+    uint16_t a ;
+    uint16_t b;
+    uint16_t c ;
+  };
 
     struct PacketSize0{//All data Packets with 3 parameters
     unsigned char header [3]={XM_START_FF,XM_START_FF,XM_START_FD} ;//defined 
