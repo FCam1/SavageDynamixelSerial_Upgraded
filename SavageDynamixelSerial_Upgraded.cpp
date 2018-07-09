@@ -19,22 +19,22 @@
 
 // Macro for the selection of the Serial Port
 //Protocol 1.0
-#define sendData(args) (Serial4.write(args))  // Write Over Serial
-#define availableData() (Serial4.available()) // Check Serial Data Available
-#define readData() (Serial4.read())           // Read Serial Data
-#define peekData() (Serial4.peek())           // Peek Serial Data
-#define beginCom(args) (Serial4.begin(args))  // Begin Serial Comunication
-#define endCom() (Serial4.end())              // End Serial Comunication
-#define axflush() (Serial4.flush())           // Wait the end of the transfert
+#define sendData(args) (serial_.write(args))  // Write Over Serial
+#define availableData() (serial_.available()) // Check Serial Data Available
+#define readData() (serial_.read())           // Read Serial Data
+#define peekData() (serial_.peek())           // Peek Serial Data
+//#define beginCom(args) (serial_.begin(args))  // Begin Serial Comunication
+//#define endCom() (serial_.end())              // End Serial Comunication
+#define axflush() (serial_.flush()) // Wait the end of the transfert
 //Protocol 2.0
-#define sendDataXm(args) (Serial5.write(args))        // Write Over Serial
-#define sendDataX(args, gg) (Serial5.write(args, gg)) // Write Over Serial
-#define availableDataXm() (Serial5.available())       // Check Serial Data Available
-#define readDataXm() (Serial5.read())                 // Read Serial Data
-#define peekDataXm() (Serial5.peek())                 // Peek Serial Data
-#define beginComXm(args) (Serial5.begin(args))        // Begin Serial Comunication
-#define endComXm() (Serial5.end())                    // End Serial Comunication
-#define xmflush() (Serial5.flush())                   // Wait the end of the transfert
+#define sendDataXm(args) (serialx_.write(args))        // Write Over Serial
+#define sendDataX(args, gg) (serialx_.write(args, gg)) // Write Over Serial
+#define availableDataXm() (serialx_.available())       // Check Serial Data Available
+#define readDataXm() (serialx_.read())                 // Read Serial Data
+#define peekDataXm() (serialx_.peek())                 // Peek Serial Data
+//#define beginComXm(args) (serialx_.begin(args))        // Begin Serial Comunication
+//#define endComXm() (serialx_.end())                    // End Serial Comunication
+#define xmflush() (serialx_.flush()) // Wait the end of the transfert
 // Macro for Timing
 
 #define delayus(args) (delayMicroseconds(args)) // Delay Microseconds
@@ -208,21 +208,30 @@ struct PacketSync14 *ptr_packetsync14;
 
 // Public Methods //////////////////////////////////////////////////////////////
 //Protocol 1.0
+DynamixelClass::DynamixelClass(Stream &serial)
+    : serial_(serial) {}
+
+void DynamixelClass::SetDirPin(unsigned char directionPin)
+{
+  Direction_Pin = directionPin;
+  setDPin(Direction_Pin, OUTPUT);
+}
+
 void DynamixelClass::begin(long baud, unsigned char directionPin)
 {
   Direction_Pin = directionPin;
   setDPin(Direction_Pin, OUTPUT);
-  beginCom(baud);
+  //beginCom(baud);
 }
 
 void DynamixelClass::begin(long baud)
 {
-  beginCom(baud);
+  //beginCom(baud);
 }
 
 void DynamixelClass::end()
 {
-  endCom();
+  //endCom();
 }
 
 int DynamixelClass::reset(unsigned char ID)
@@ -669,23 +678,23 @@ int DynamixelClass::readPosition(unsigned char ID, int *Pos_Long_Byte)
     delayus(1);
   }
   while (availableData() > 0)
+  {
+    Incoming_Byte = readData();
+    if ((Incoming_Byte == 255) & (peekData() == 255))
     {
-      Incoming_Byte = readData();
-      if ((Incoming_Byte == 255) & (peekData() == 255))
+      readData();                         // Start Bytes
+      readData();                         // Ax-12 ID
+      readData();                         // Length
+      if ((Error_Byte = readData()) != 0) // Error
       {
-        readData();                         // Start Bytes
-        readData();                         // Ax-12 ID
-        readData();                         // Length
-        if ((Error_Byte = readData()) != 0) // Error
-        {
-          return (Error_Byte);
-        }
-        Position_Low_Byte = readData(); // Position Bytes
-        Position_High_Byte = readData();
-        *Pos_Long_Byte = Position_High_Byte << 8 | Position_Low_Byte;
-        //readData(); //Checksum
+        return (Error_Byte);
       }
+      Position_Low_Byte = readData(); // Position Bytes
+      Position_High_Byte = readData();
+      *Pos_Long_Byte = Position_High_Byte << 8 | Position_Low_Byte;
+      //readData(); //Checksum
     }
+  }
 }
 
 int DynamixelClass::readVoltage(unsigned char ID)
@@ -1197,11 +1206,20 @@ int DynamixelClass::synWritePos(unsigned char ID1, int Position1, unsigned char 
 // Public Methods //////////////////////////////////////////////////////////////
 //Protocol 2.0
 
+DynamixelXClass::DynamixelXClass(Stream &serialx)
+    : serialx_(serialx) {}
+
+void DynamixelXClass::SetDirPin(unsigned char directionPin)
+{
+  Direction_Pin = directionPin;
+  setDPin(Direction_Pin, OUTPUT);
+}
+
 void DynamixelXClass::begin(long baud, unsigned char directionPin)
 {
   Direction_Pin = directionPin;
   setDPin(Direction_Pin, OUTPUT);
-  beginComXm(baud);
+  //beginComXm(baud);
 }
 
 struct ReturnPacket2 DynamixelXClass::ping(unsigned char ID)
@@ -1673,5 +1691,5 @@ int DynamixelXClass::syncReadCur(unsigned char ID1, unsigned char ID2)
   }
 }
 
-DynamixelClass Dynamixel;
-DynamixelXClass DynamixelX;
+//DynamixelClass Dynamixel;
+//DynamixelXClass DynamixelX;
