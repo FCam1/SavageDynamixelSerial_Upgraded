@@ -3,47 +3,45 @@
  * Allow the control of dynamixels using Protocol 2.0 like X series 
  * 
  * NB : 
- * Current settings : - Serial4 for protocol 1.0 
-                      - serial5 for protocol 2.0 
+ * Current settings : 
                       - XM_TX_DELAY_TIME = 400us (settings for 1Mbps) for default use (57600bps) this parameter have to be increase ~4000us
  */
-
 #include <time.h>
+#include <SavageDynamixelSerial_Upgraded.h>
 
-#include <SavageDynamixelSerial_Upgraded.h> 
+DynamixelXClass DynamixelX(Serial5); //Allow setup without SoftwareSerial
 
-int theta;
-float p=1.57;
+void setup()
+{
+  Serial5.begin(1000000); //Allow setup without SoftwareSerial
+  DynamixelX.SetDirPin(PG3); //(Baud rate (Default : 57600), Control Pin for Half duplex)
 
-void setup() {
-  DynamixelX.begin(1000000,PG3);//(Baud rate (Default : 57600), Control Pin for Half duplex)
-;
   //Initialization
-  DynamixelX.setTorque (0xFE,0); //(ID, 0 ) Enable EEPROM writing - 0xFE : Broadcast ID 
-  delay (10);   
-  DynamixelX.setTorque (0xFE,1); //(ID, 1) Enable moving
-  delay (1);
-  
-  Serial.begin (9600); //USB
-  while (!Serial) {}
+  DynamixelX.setTorque(0xFE, 0); //(ID, 0 ) Enable EEPROM writing - 0xFE : Broadcast ID
+  delay(10);
+  DynamixelX.setTorque(0xFE, 1); //(ID, 1) Enable moving
+  delay(10);
+
+  Serial.begin(9600); //USB
+  while (!Serial)
+  {
+  }
   delay(400);
   Serial.println("setTorque XM OK");
   Serial.println("Setup OK !");
   Serial.setTimeout(10);
-
 }
 
-void loop() {
+float p =0;
 
-  p=p+0.01;
-  if (p>1.57) p-0.01;
-  
-  
-  theta = labs(255*cos(p));
+void loop()
+{
+   p = p +0.005;
+  float theta = abs(sin(p))*4095;
+  DynamixelX.move(1, theta);
+
   Serial.println(theta);
-    
-  DynamixelX.move(1,theta ); 
-  
-  delay (10);
+  //Serial.println(p);
 
+  delay(10);
 }
