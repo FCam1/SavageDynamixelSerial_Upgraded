@@ -6,13 +6,14 @@ The original librarie allow to control only the dynamixels with Protocol 1.0. Th
 
 Current State of librarie:   
 ## Protocol 1 :   
-Savage librarie + :  
+Savage librarie + :    
+SetDirPin(unsigned char directionPin)  
 synWritePos(unsigned char ID1, int Position1,unsigned char ID2, int Position2)  
 readPosition(unsigned char ID, int *Pos_Long_Byte)
 
-## Protocol 2 :    
-ping (unsigned char ID)   
-begin (long baud, unsigned char directionPin)  
+## Protocol 2 :
+SetDirPin(unsigned char directionPin)  
+ping (unsigned char ID)       
 setRDT (unsigned char ID, unsigned char RDT)  
 ledStatus (unsigned char ID, bool Status)
 setBD (unsigned char ID, int baud)  
