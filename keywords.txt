@@ -48,7 +48,7 @@ setTorque       	KEYWORD2
 
 # Constants (LITERAL1)
 
-OFF     	        LITERAL1
+OFF             	LITERAL1
 ON              	LITERAL1
 LEFT            	LITERAL1
 RIGTH           	LITERAL1
