@@ -9,7 +9,7 @@ DynamixelX        	KEYWORD1
 
 # Methods and Functions (KEYWORD2)
 
-SetDirPin         KEYWORD2
+SetDirPin       	KEYWORD2
 begin           	KEYWORD2
 end             	KEYWORD2
 reset           	KEYWORD2
@@ -28,9 +28,9 @@ ledStatus       	KEYWORD2
 setTempLimit    	KEYWORD2
 setAngleLimit   	KEYWORD2
 setVoltageLimit 	KEYWORD2
-setMaxTorque      KEYWORD2
+setMaxTorque    	KEYWORD2
 setSRL          	KEYWORD2
-setRDT            KEYWORD2
+setRDT          	KEYWORD2
 setLEDAlarm      	KEYWORD2
 setShutdownAlarm   	KEYWORD2
 setCMargin         	KEYWORD2
@@ -40,11 +40,11 @@ moving            	KEYWORD2
 lockRegister       	KEYWORD2
 RWStatus        	KEYWORD2
 readSpeed        	KEYWORD2
-readLoad          KEYWORD2
+readLoad        	KEYWORD2
 readPosition    	KEYWORD2
 readTemperature 	KEYWORD2
 readVoltage     	KEYWORD2
-setTorque         KEYWORD2
+setTorque       	KEYWORD2
 
 # Constants (LITERAL1)
 
