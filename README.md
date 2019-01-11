@@ -21,7 +21,9 @@ setTorque (unsigned char ID, bool torque)
 synWritePos (unsigned char ID1, int Position1,unsigned char ID2, int Position2)  
 readPosition (unsigned char ID, int *Pos_Long_Byte)  
 syncReadPos (unsigned char ID1, int *Pos_Long_Byte1, unsigned char ID2, int *Pos_Long_Byte2)   
-syncReadCur (unsigned char ID1, unsigned char ID2) : returns 2 currents in a single variable
+syncReadCur (unsigned char ID1, unsigned char ID2) : returns 2 currents in a single variable  
+setProfileAcc(unsigned char ID, int acc_range)  
+setProfileVel(unsigned char ID, int vel_range)  
   
   
 
