@@ -188,6 +188,8 @@
 // RAM AREA  //////////////////////////////////////////////////////////////
 #define XM_RETURN_DELAY_TIME 9
 #define XM_TORQUE_ENABLE 64
+#define XM_PROFILE_ACC 108
+#define XM_PROFILE_VEL 112
 #define XM_GOAL_POSITION 116
 #define XM_PRESENT_CURRENT 126
 #define XM_PRESENT_POSITION 132
@@ -339,6 +341,8 @@ public:
   int setBD(unsigned char ID, int baud); //0:9600, 1:57600(default), 2:115200, 3:1M, 4:2M, 5:3M, 6:4M, 7:4.5M
   int setTorque(unsigned char ID, bool torque);
   int synWritePos(unsigned char ID1, int Position1, unsigned char ID2, int Position2);
+  int setProfileAcc(unsigned char ID, int acc_range);
+  int setProfileVel(unsigned char ID, int vel_range);
 
   int readPosition(unsigned char ID);
   int readPosition(unsigned char ID, int *Pos_Long_Byte);

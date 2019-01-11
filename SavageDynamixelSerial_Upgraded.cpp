@@ -95,7 +95,7 @@ int DynamixelXClass::read_error(void)
       return (Error_Byte);
     }
   }
-  return (-1); // No Ax Response
+  return (-1); // No Xm Response
 }
 
 //ROBOTIS CRC16 CALCULATOR
@@ -1691,5 +1691,62 @@ int DynamixelXClass::syncReadCur(unsigned char ID1, unsigned char ID2)
   }
 }
 
+
+int DynamixelXClass::setProfileAcc(unsigned char ID, int acc_range)
+{
+  ptr_packetsize6 = &packetsize6;
+  packetsize6.id = ID;
+  packetsize6.instruction = XM_WRITE;
+  packetsize6.param1 = XM_PROFILE_ACC;
+  packetsize6.param3 = (acc_range & 0x00FF);
+  packetsize6.param4 = (acc_range >> 8) & 0x00FF;
+  packetsize6.param5 = (acc_range >> 16) & 0x00FF;
+  packetsize6.param6 = (acc_range >> 24) & 0x00FF;
+  packetsize6.crc_L = 0x00; //(pour son calcul les valeurs du CRC doivent être misent à 0 dans le packet)
+  packetsize6.crc_H = 0x00;
+  //calcul CRC
+  unsigned short CRC = update_crc(0, (uint8_t *)ptr_packetsize6, 14); //init crc_accum | packet | 5+Packet Lenght()
+  packetsize6.crc_L = (CRC & 0x00FF);
+  packetsize6.crc_H = (CRC >> 8) & 0x00FF;
+  //Send Data
+  switchCom(Direction_Pin, Tx_MODE);
+  sendDataX((uint8_t *)ptr_packetsize6, 16); //Size of the packet
+  xmflush();
+  delayus(XM_TX_DELAY_TIME);
+  switchCom(Direction_Pin, Rx_MODE);
+
+  return (read_error()); // Return the read error
+}
+
+
+int DynamixelXClass::setProfileVel(unsigned char ID, int vel_range)
+{
+  ptr_packetsize6 = &packetsize6;
+  packetsize6.id = ID;
+  packetsize6.instruction = XM_WRITE;
+  packetsize6.param1 = XM_PROFILE_VEL;
+  packetsize6.param3 = (vel_range & 0x00FF);
+  packetsize6.param4 = (vel_range >> 8) & 0x00FF;
+  packetsize6.param5 = (vel_range >> 16) & 0x00FF;
+  packetsize6.param6 = (vel_range >> 24) & 0x00FF;
+  packetsize6.crc_L = 0x00; //(pour son calcul les valeurs du CRC doivent être misent à 0 dans le packet)
+  packetsize6.crc_H = 0x00;
+  //calcul CRC
+  unsigned short CRC = update_crc(0, (uint8_t *)ptr_packetsize6, 14); //init crc_accum | packet | 5+Packet Lenght()
+  packetsize6.crc_L = (CRC & 0x00FF);
+  packetsize6.crc_H = (CRC >> 8) & 0x00FF;
+  //Send Data
+  switchCom(Direction_Pin, Tx_MODE);
+  sendDataX((uint8_t *)ptr_packetsize6, 16); //Size of the packet
+  xmflush();
+  delayus(XM_TX_DELAY_TIME);
+  switchCom(Direction_Pin, Rx_MODE);
+
+  return (read_error()); // Return the read error
+}
+
 //DynamixelClass Dynamixel;
 //DynamixelXClass DynamixelX;
+
+
+
